@@ -1,0 +1,210 @@
+import React, { Component } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+
+class App extends Component {
+  constructor() {
+    super();
+    this.state = {
+      currentScreen: 'Home', // หน้าเริ่มต้น
+      distance: '',
+      time: '',
+      fare: null,
+      history: [],
+    };
+  }
+  //การเปลี่ยนหน้า
+  navigateToScreen = (screen) => {
+    this.setState({ currentScreen: screen });
+  };
+
+//คำนวณค่าโดยสาร
+calculateFare = () => {
+  const { distance, time } = this.state;
+  const Distance = parseFloat(distance);
+  const parsedTime = parseFloat(time);
+  if (isNaN(Distance) || isNaN(parsedTime) || Distance < 0 || parsedTime < 0) {
+    alert('กรุณากรอกระยะทางและเวลาที่ถูกต้อง');
+    return;
+  }
+
+  const baseFare = 35;
+  let distanceFare = 0;
+  if (Distance > 0 && Distance <= 1) {
+    distanceFare = 0;
+  } else if (Distance <= 10) {
+    distanceFare = (Distance - 1) * 5.5;
+  } else if (Distance <= 20) {
+    distanceFare = (10 - 1) * 5.5 + (Distance - 10) * 6.5;
+  } else if (Distance <= 40) {
+    distanceFare = (10 - 1) * 5.5 + (20 - 10) * 6.5 + (Distance - 20) * 7.5;
+  } else if (Distance <= 60) {
+    distanceFare = (10 - 1) * 5.5 + (20 - 10) * 6.5 + (40 - 20) * 7.5 + (Distance - 40) * 8;
+  } else if (Distance <= 80) {
+    distanceFare = (10 - 1) * 5.5 + (20 - 10) * 6.5 + (40 - 20) * 7.5 + (60 - 40) * 8 + (Distance - 60) * 9;
+  } else {
+    distanceFare = (10 - 1) * 5.5 + (20 - 10) * 6.5 + (40 - 20) * 7.5 + (60 - 40) * 8 + (80 - 60) * 9 + (Distance - 80) * 10.5;
+  }
+
+  const waitingFare = parsedTime * 2;
+  const totalFare = baseFare + distanceFare + waitingFare;
+
+  // ปัดเศษผลรวมเป็น 2 ตำแหน่งหลังจุดทศนิยม
+  const totalFareFixed = totalFare.toFixed(2);
+
+  const historyItem = { distance: Distance, time: parsedTime, fare: totalFareFixed };
+  this.setState(prevState => ({
+    fare: totalFareFixed,
+    history: [...prevState.history, historyItem]
+  }));
+};
+
+  
+  //ลบประวัติการคำนวณ
+  deleteHistoryItem = (index) => {
+    const newHistory = [...this.state.history];
+    newHistory.splice(index, 1); // ลบประวัติที่เลือก
+    this.setState({ history: newHistory });
+  };
+
+  render() {
+    const { currentScreen, distance, time, fare, history } = this.state;
+    // หน้าแรก (Home)
+    if (currentScreen === 'Home') {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>ยินดีต้อนรับสู่แอปคำนวณค่าแท็กซี่ </Text>
+          <Button title="คำนวณค่าโดยสาร" onPress={() => this.navigateToScreen('Fare')} color="#4CAF50" />
+          <Button title="ประวัติการคำนวณ" onPress={() => this.navigateToScreen('History')} color="#4CAF50" />
+          <Button title="ติดต่อเรา" onPress={() => this.navigateToScreen('Contact')} color="#4CAF50" />
+          <Button title="ข้อมูลเพิ่มเติม" onPress={() => this.navigateToScreen('about')} color="#4CAF50" />
+        </View>
+      ); }
+
+    // หน้าคำนวณค่าโดยสาร
+    if (currentScreen === 'Fare') {
+      return (
+        <View style={styles.container}>
+          <Text style={{fontSize: 22,paddingTop:10,fontWeight: 'bold',marginBottom: 20,textAlign: 'center',color: '#333',}}
+          >คำนวณค่าโดยสาร</Text>
+          <Text>ตารางค่าโดยสาร</Text>
+          <Text>0 - 1 กม. ค่าโดยสารเริ่มต้น 35 บาท</Text>
+          <Text>1 - 10 กม. ค่าโดยสารคิดเพิ่ม 5 บาท/กม.</Text>
+          <Text>11 - 20 กม. ค่าโดยสารคิดเพิ่ม 6.50 บาท/กม.</Text>
+          <Text>21 - 40 กม. ค่าโดยสารคิดเพิ่ม 7.50 บาท/กม.</Text>
+          <Text>41 - 60 กม. ค่าโดยสารคิดเพิ่ม 8.00 บาท/กม.</Text>
+          <Text>61 - 80 กม. ค่าโดยสารคิดเพิ่ม 9.00 บาท/กม.</Text>
+          <Text>มากกว่า 80 กม. ค่าโดยสารคิดเพิ่ม 10.50 บาท/กม.</Text>
+          <Text style={{paddingBottom:10,paddingTop:10}}>ค่าเวลาการเดินทางขณะรถติด คิดเป็น 2 บาท/นาที</Text>
+          <Text style={{fontSize:15,fontWeight: 'bold'}}>กรุณากรอกระยะทางที่ถูกต้อง</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="ระยะทาง (กม.)"
+            keyboardType="numeric"
+            value={distance}
+            onChangeText={(text) => this.setState({ distance: text })}/>
+          <Text style={{fontSize:15,fontWeight: 'bold'}}>กรุณากรอกเวลาที่ถูกต้อง</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="เวลาเดินทาง (รถติด)"
+            keyboardType="numeric"
+            value={time}
+            onChangeText={(text) => this.setState({ time: text })}/>
+          <Button title="คำนวณค่าโดยสาร" onPress={this.calculateFare} color="#4CAF50" />
+          {fare && (
+            <Text style={styles.result}>ค่าโดยสารรวม: {fare} บาท</Text>
+          )}
+          <Button title="กลับสู่หน้าแรก" onPress={() => this.navigateToScreen('Home')} color="#2196F3" />
+        </View>
+      ); }
+    // หน้าประวัติการคำนวณ
+    if (currentScreen === 'History') {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>ประวัติการคำนวณค่าโดยสาร</Text>
+          <ScrollView style={styles.historyContainer}>
+            {history.length === 0 ? ( 
+              <Text>ยังไม่มีประวัติการคำนวณ</Text>
+            ) : ( history.map((item, index) => (
+                  <View key={index} style={styles.historyItem}>
+                  <Text style={styles.historyText}>ระยะทาง: {item.distance} กม.</Text>
+                  <Text style={styles.historyText}>เวลา: {item.time} นาที</Text>
+                  <Text style={styles.historyText}>ค่าโดยสาร: {item.fare} บาท</Text>
+                  <Button title="ลบ" onPress={() => this.deleteHistoryItem(index)} color="#f44336"/>
+                  </View>
+              ))
+            )}
+          </ScrollView>
+          <Button title="กลับสู่หน้าแรก" onPress={() => this.navigateToScreen('Home')} color="#2196F3" />
+        </View>
+      ); }
+    // หน้าติดต่อเรา
+    if (currentScreen === 'Contact') {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>ติดต่อเรา</Text>
+          <Text style={{ padding: 3,paddingTop:10}}>ที่อยู่: 152/1 อำเภอเมือง จังหวัดชัยภูมิ 36150</Text>
+          <Text style={{ padding: 3,paddingTop:10}}>อีเมล: fasai@gmail.com</Text>
+          <Text style={{ padding: 3,paddingTop:10, paddingBottom: 15}}>เบอร์โทร: 068-456-7890</Text>
+          <Button title="กลับสู่หน้าแรก" onPress={() => this.navigateToScreen('Home')} color="#2196F3" />
+        </View>
+      ); }
+    // หน้าข้อมูลเพิ่มเติม
+    if (currentScreen === 'about') {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.title}>ข้อมูลเพิ่มเติม</Text>
+          <Text style={{ padding: 30,paddingTop:10}}>แอปนี้สามารถช่วยคำนวณค่าใช้จ่ายการเดินทางและสามารถดูข้อมูลค่าใช้จ่ายได้</Text>
+          <Button style={styles.title} title="กลับสู่หน้าแรก" onPress={() => this.navigateToScreen('Home')} color="#2196F3" />
+        </View>
+      ); }
+    return null;
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 100,
+    paddingHorizontal: 20,
+    backgroundColor: '#f0f4f7', // สีพื้นหลัง
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+    fontSize: 16,
+    width: '100%',
+  },
+  result: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    padding: 20,
+    textAlign: 'center',
+    color: '#4CAF50',
+  },
+  historyContainer: {
+    width: '100%',
+    marginTop: 10,
+  },
+  historyItem: {
+    padding: 15,
+    marginBottom: 10,
+    backgroundColor: '#eaeaea',
+    borderRadius: 10,
+    borderColor: '#ddd',
+  },
+  historyText: {
+    fontSize: 16,
+    color: '#333',
+  },
+});
+export default App;
